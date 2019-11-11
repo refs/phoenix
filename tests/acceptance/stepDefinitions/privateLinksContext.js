@@ -5,6 +5,7 @@ const webdav = require('../helpers/webdavHelper')
 When('the user copies the private link of the file/folder {string} using the webUI', function (resource) {
   return client.page.FilesPageElement
     .filesList()
+    .waitForElementVisible('@filesTableContainer')
     .clickRow(resource)
     .copyPrivateLink()
 })

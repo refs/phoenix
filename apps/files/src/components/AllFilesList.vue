@@ -1,20 +1,23 @@
 <template>
   <div class="uk-height-1-1">
     <div class="uk-flex uk-flex-column uk-height-1-1">
-      <div id="files-list-container" class="uk-overflow-auto uk-flex-auto">
+      <div class="uk-overflow-auto uk-flex-auto">
         <file-list :fileData="fileData" id="files-list" :loading="loadingFolder" :actions="actions" :compactMode="_sidebarOpen"
             :isActionEnabled="isActionEnabled">
           <template #headerColumns>
-            <oc-table-cell shrink type="head" v-if="!publicPage()"><span class="oc-visually-hidden">{{favoritesHeaderText}}</span></oc-table-cell>
-            <oc-table-cell type="head" class="uk-text-truncate" v-translate>Name</oc-table-cell>
-            <oc-table-cell shrink type="head" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-visible@m'  : _sidebarOpen }"><translate>Size</translate></oc-table-cell>
-            <oc-table-cell shrink type="head" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-visible@m'  : _sidebarOpen }" class="uk-text-nowrap" v-translate>Modification Time</oc-table-cell>
+            <div v-if="!publicPage()">
+              <span class="oc-visually-hidden" v-text="favoritesHeaderText" />
+              <oc-star id="files-table-header-star" aria-hidden="true" class="uk-display-block uk-disabled" />
+            </div>
+            <div class="uk-text-truncate uk-text-meta uk-width-expand" v-translate>Name</div>
+            <div :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-hidden'  : _sidebarOpen }" class="uk-text-meta uk-width-small" v-translate>Size</div>
+            <div type="head" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-hidden'  : _sidebarOpen }" class="uk-text-nowrap uk-text-meta uk-width-small" v-translate>Modification Time</div>
           </template>
           <template #rowColumns="{ item }">
-            <oc-table-cell class="uk-padding-remove" v-if="!publicPage()">
+            <div v-if="!publicPage()">
               <oc-star class="uk-display-block" @click.native.stop="toggleFileFavorite(item)" :shining="item.starred" />
-            </oc-table-cell>
-            <oc-table-cell class="uk-text-truncate">
+            </div>
+            <div class="uk-text-truncate uk-width-expand">
               <oc-file @click.native.stop="item.type === 'folder' ? navigateTo(item.path.substr(1)) : openFileActionBar(item)"
                 :name="$_ocFileName(item)" :extension="item.extension" class="file-row-name" :icon="fileTypeIcon(item)"
                 :filename="item.name" :key="item.id"/>
@@ -24,13 +27,13 @@
                 :uk-tooltip="disabledActionTooltip(item)"
                 class="uk-margin-small-left"
               />
-            </oc-table-cell>
-            <oc-table-cell class="uk-text-meta uk-text-nowrap" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-visible@m'  : _sidebarOpen }">
+            </div>
+            <div class="uk-text-meta uk-text-nowrap uk-width-small" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-hidden'  : _sidebarOpen }">
               {{ item.size | fileSize }}
-            </oc-table-cell>
-            <oc-table-cell class="uk-text-meta uk-text-nowrap" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-visible@m'  : _sidebarOpen }">
+            </div>
+            <div class="uk-text-meta uk-text-nowrap uk-width-small" :class="{ 'uk-visible@s' : !_sidebarOpen, 'uk-hidden'  : _sidebarOpen }">
               {{ formDateFromNow(item.mdate) }}
-            </oc-table-cell>
+            </div>
           </template>
           <template #footer>
             <div v-if="activeFilesCount.folders > 0 || activeFilesCount.files > 0" class="uk-text-nowrap uk-text-meta">
@@ -172,3 +175,10 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+  /* FIXME */
+  #files-table-header-star {
+    opacity: 0;
+  }
+</style>

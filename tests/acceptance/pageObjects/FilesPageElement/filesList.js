@@ -361,11 +361,11 @@ module.exports = {
      * @param {string} fileName
      */
     waitForFileVisible: function (fileName) {
-      const rowSelector = this.getFileRowSelectorByFileName(fileName)
       const linkSelector = this.getFileLinkSelectorByFileName(fileName)
       return this
+        .waitForElementVisible('@filesTableContainer')
+        .findItemInFilesList(fileName)
         .useXpath()
-        .waitForElementVisible(rowSelector)
         .getAttribute(linkSelector, 'filename', function (result) {
           this.assert.strictEqual(result.value, fileName, 'displayed file name not as expected')
         })
@@ -545,8 +545,11 @@ module.exports = {
     filesTable: {
       selector: '#files-list, #shared-with-list'
     },
+    filesTableContainer: {
+      selector: '#files-list-container'
+    },
     fileRows: {
-      selector: 'tr.file-row'
+      selector: '.file-row'
     },
     loadingIndicator: {
       selector: '//*[contains(@class, "oc-loader")]',
@@ -597,10 +600,10 @@ module.exports = {
       selector: '#oc-dialog-rename-confirm'
     },
     fileRowByName: {
-      selector: '//span[@class="oc-file-name"][text()=%s and not(../span[@class="oc-file-extension"])]/../../..'
+      selector: '//span[@class="oc-file-name"][text()=%s and not(../span[@class="oc-file-extension"])]/../../../..'
     },
     fileRowByNameAndExtension: {
-      selector: '//span[span/text()=%s and span/text()="%s"]/../..'
+      selector: '//span[span/text()=%s and span/text()="%s"]/../../..'
     },
     fileLinkInFileRow: {
       selector: '//span[contains(@class, "file-row-name")]'
