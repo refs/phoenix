@@ -543,11 +543,12 @@ export default {
         context.commit('SHARES_LOAD', data.map(element => {
           return _buildShare(element.shareInfo)
         }))
+        context.commit('SHARES_LOADING', false)
       })
       .catch(error => {
         context.commit('SHARES_ERROR', error.message)
+        context.commit('SHARES_LOADING', false)
       })
-      .finally(context.commit('SHARES_LOADING', false))
   },
   sharesClearState (context, payload) {
     context.commit('SHARES_LOAD', [])
@@ -573,10 +574,10 @@ export default {
         params.permissions = canShare ? 31 : 15
         break
       case ('custom'):
-        if (canChange) perms += changePerm
-        if (canCreate) perms += createPerm
-        if (canDelete) perms += deletePerm
-        if (canShare) perms += resharePerm
+        if (canChange) perms |= changePerm
+        if (canCreate) perms |= createPerm
+        if (canDelete) perms |= deletePerm
+        if (canShare) perms |= resharePerm
         params.permissions = perms
 
         if (perms === 1 || perms === 17) {
@@ -595,15 +596,13 @@ export default {
     }
 
     client.shares.updateShare(share.info.id, params)
-      .then(() => {
-        // TODO: work with response once it is available: https://github.com/owncloud/owncloud-sdk/issues/208
-        context.commit('SHARES_UPDATE_SHARE', { share, role })
+      .then((updatedShare) => {
+        context.commit('TOGGLE_COLLABORATOR_SAVING', false)
+        context.commit('SHARES_UPDATE_SHARE', _buildShare(updatedShare.shareInfo))
       })
       .catch(e => {
-        console.log(e)
-      })
-      .finally(_ => {
         context.commit('TOGGLE_COLLABORATOR_SAVING', false)
+        console.log(e)
       })
   },
   addShare (context, { client, path, $gettext, shareWith, shareType, permissions }) {

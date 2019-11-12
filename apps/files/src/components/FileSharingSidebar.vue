@@ -1,36 +1,56 @@
 <template>
   <div id="oc-files-sharing-sidebar">
-    <new-collaborator v-if="$_ocCollaborators_canShare" key="new-collaborator" />
-    <translate
-      v-else
-      key="no-reshare-permissions-message"
-      v-text="noResharePermsMessage"
-    />
-    <oc-loader v-if="sharesLoading" />
-    <template v-else>
-      <div v-if="$_ocCollaborators_users.length > 0" id="files-collaborators-list">
-        <h5>
-          <translate>Users</translate>
-          ({{ $_ocCollaborators_users.length }})
-        </h5>
-        <oc-accordion>
+    <div v-if="visiblePanel == 'collaboratorList'">
+      <oc-loader v-if="sharesLoading" aria-label="Loading collaborator list" />
+      <template v-else>
+        <div v-if="$_ocCollaborators_canShare" class="uk-text-right">
+          <oc-button variation="primary" icon="add" @click="visiblePanel = 'newCollaborator'" class="files-collaborators-collaborator-add"><translate>Add Collaborators</translate></oc-button>
+        </div>
+        <translate
+          v-else
+          class="files-collaborators-no-reshare-permissions-message"
+          key="no-reshare-permissions-message"
+          v-text="noResharePermsMessage"
+        />
+        <div v-if="$_ocCollaborators_users.length > 0" id="files-collaborators-list" key="oc-collaborators-user-list">
+          <h5>
+            <translate>Users</translate>
+            ({{ $_ocCollaborators_users.length }})
+          </h5>
           <template v-for="user in $_ocCollaborators_users">
-            <collaborator :key="user.info.id" :collaborator="user" />
+            <oc-grid :key="user.info.id" gutter="small" class="files-collaborators-collaborator">
+              <collaborator class="uk-width-expand" :collaborator="user" />
+              <div class="uk-width-auto">
+                <oc-icon class="files-collaborators-collaborator-edit" name="edit" :aria-label="$gettext('Edit share')" @click="$_ocCollaborators_editShare(user)" />
+                <oc-icon class="files-collaborators-collaborator-delete" name="close" :aria-label="$gettext('Delete share')" @click="$_ocCollaborators_deleteShare(user)" />
+              </div>
+            </oc-grid>
           </template>
-        </oc-accordion>
-      </div>
-      <div v-if="$_ocCollaborators_groups.length > 0" id="files-collaborators-list-groups">
-        <h5>
-          <translate>Groups</translate>
-          ({{ $_ocCollaborators_groups.length }})
-        </h5>
-        <oc-accordion>
+        </div>
+        <div v-if="$_ocCollaborators_groups.length > 0" id="files-collaborators-list-groups" key="oc-collaborators-group-list">
+          <h5>
+            <translate>Groups</translate>
+            ({{ $_ocCollaborators_groups.length }})
+          </h5>
           <template v-for="group in $_ocCollaborators_groups">
-            <collaborator :key="group.info.id" :collaborator="group" />
+            <oc-grid :key="group.info.id" gutter="small" class="files-collaborators-collaborator">
+              <collaborator class="uk-width-expand" :collaborator="group" />
+              <div class="uk-width-auto">
+                <oc-icon class="files-collaborators-collaborator-edit" name="edit" :aria-label="$gettext('Edit share')" @click="$_ocCollaborators_editShare(group)" />
+                <oc-icon class="files-collaborators-collaborator-delete" name="close" :aria-label="$gettext('Delete share')" @click="$_ocCollaborators_deleteShare(group)" />
+              </div>
+            </oc-grid>
           </template>
-        </oc-accordion>
-      </div>
-    </template>
+        </div>
+        <div v-if="!shares.length && !sharesLoading" key="oc-collaborators-no-results"><translate>No collaborators</translate></div>
+      </template>
+    </div>
+    <div v-if="visiblePanel == 'newCollaborator'">
+      <new-collaborator v-if="$_ocCollaborators_canShare" key="new-collaborator" @close="visiblePanel='collaboratorList'" />
+    </div>
+    <div v-if="visiblePanel == 'editCollaborator'">
+      <edit-collaborator v-if="$_ocCollaborators_canShare" key="edit-collaborator" @close="visiblePanel='collaboratorList'; currentShare = null" :collaborator="currentShare" />
+    </div>
   </div>
 </template>
 
@@ -38,6 +58,7 @@
 import { mapGetters, mapActions, mapState } from 'vuex'
 import Mixins from './Collaborators/mixins'
 const NewCollaborator = _ => import('./Collaborators/NewCollaborator.vue')
+const EditCollaborator = _ => import('./Collaborators/EditCollaborator.vue')
 const Collaborator = _ => import('./Collaborators/Collaborator.vue')
 
 export default {
@@ -47,7 +68,14 @@ export default {
   name: 'FileSharingSidebar',
   components: {
     NewCollaborator,
+    EditCollaborator,
     Collaborator
+  },
+  data: () => {
+    return {
+      visiblePanel: 'collaboratorList',
+      currentShare: null
+    }
   },
   mixins: [Mixins],
   mounted () {
@@ -104,8 +132,19 @@ export default {
   methods: {
     ...mapActions('Files', [
       'loadShares',
-      'sharesClearState'
-    ])
+      'sharesClearState',
+      'deleteShare'
+    ]),
+    $_ocCollaborators_editShare (share) {
+      this.currentShare = share
+      this.visiblePanel = 'editCollaborator'
+    },
+    $_ocCollaborators_deleteShare (share) {
+      this.deleteShare({
+        client: this.$client,
+        share: share
+      })
+    }
   }
 }
 </script>

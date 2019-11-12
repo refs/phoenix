@@ -92,6 +92,7 @@ const shareFileFolder = function (elementToShare, sharer, receiver, shareType = 
 const assertCollaboratorslistContains = function (type, name, role) {
   return client.page.FilesPageElement.sharingDialog().getCollaboratorsList()
     .then(shares => {
+      console.log('######### ', shares)
       const cleanedShares = []
       for (var i = 0; i < shares.length; i++) {
         cleanedShares.push(shares[i].replace(/\n/g, ' '))
@@ -356,11 +357,11 @@ Given('the administrator has excluded group {string} from receiving shares', asy
 })
 
 When('the user types {string} in the share-with-field', function (input) {
-  return client.page.FilesPageElement.sharingDialog().enterAutoComplete(input)
+  return client.page.FilesPageElement.sharingDialog().clickCreateShare().enterAutoComplete(input)
 })
 
 When('the user displays all share-autocomplete results using the webUI', function () {
-  return client.page.FilesPageElement.sharingDialog().showAllAutoCompleteResults()
+  return client.page.FilesPageElement.sharingDialog().clickCreateShare().showAllAutoCompleteResults()
 })
 
 When('the user sets custom permission for current role of collaborator {string} for folder/file {string} to {string} using the webUI', function (user, resource, permissions) {

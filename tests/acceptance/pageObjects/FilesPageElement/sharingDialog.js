@@ -3,7 +3,7 @@ const userSharePostfix = '\nUser'
 const util = require('util')
 const _ = require('lodash')
 
-const collaboratorPermissionArray = ['share', 'change', 'create', 'delete']
+const COLLABORATOR_PERMISSION_ARRAY = ['share', 'change', 'create', 'delete']
 
 module.exports = {
   commands: {
@@ -25,8 +25,8 @@ module.exports = {
 
     assertSharingNotAllowed: function () {
       // eslint-disable-next-line no-unused-expressions
-      this.api.expect.element(this.elements.sharingAutoComplete.selector).not.to.be.present
-      return this.api.getText(this.elements.sharingSidebarRoot.selector,
+      this.api.expect.element(this.elements.addShareButton.selector).not.to.be.present
+      return this.api.getText(this.elements.noResharePermissions.selector,
         function (result) {
           const noSharePermissionsMsgFormat = "You don't have permission to share this %s"
           const noSharePermissionsFileMsg = util.format(noSharePermissionsMsgFormat, 'file')
@@ -80,6 +80,7 @@ module.exports = {
      * @param {boolean} [shareWithGroup=false]
      */
     selectCollaboratorForShare: async function (sharee, shareWithGroup = false) {
+      await this.clickCreateShare()
       // We need waitForElementPresent here.
       // waitForElementVisible would break even with 'abortOnFailure: false' if the element is not present
       await this.enterAutoComplete(sharee)
@@ -178,17 +179,33 @@ module.exports = {
         .waitForElementNotPresent('@saveShareButton')
     },
     /**
+     * Clicks the button to add a new collaborator
+     */
+    clickCreateShare: function () {
+      return this
+        .useXpath()
+        .waitForElementVisible('@createShareButton')
+        .click('@createShareButton')
+        .waitForElementVisible('@createShareDialog')
+    },
+    /**
      *
      * @param {string} collaborator
      */
-    expandInformationSelector: function (collaborator) {
+    clickEditShare: function (collaborator) {
       const informationSelector = util.format(this.elements.collaboratorInformationByCollaboratorName.selector, collaborator)
-      const selectRoleButton = informationSelector + this.elements.selectRoleButtonInCollaboratorInformation.selector
+      const editSelector = informationSelector + this.elements.editShareButton.selector
+      const editShareDialog = this.elements.editShareDialog.selector
       return this
         .useXpath()
-        .waitForElementVisible(informationSelector)
-        .click(informationSelector)
-        .waitForElementVisible(selectRoleButton)
+        .waitForElementVisible(editSelector)
+        .click(editSelector)
+        .waitForElementVisible(editShareDialog)
+    },
+    clickCancel: function (collaborator) {
+      return this
+        .waitForElementVisible('@cancelButton')
+        .click('@cancelButton')
     },
     /**
      * Toggle the checkbox to set a certain permission for a share
@@ -216,16 +233,12 @@ module.exports = {
      */
     getSharePermissions: async function (collaborator) {
       const permissions = {}
-      let collaboratorElementXpath
+      const panelSelector = this.elements.sharingSidebarRoot.selector
       let permissionToggle
-      for (let i = 0; i < collaboratorPermissionArray.length; i++) {
-        collaboratorElementXpath = util.format(
-          this.elements.collaboratorInformationByCollaboratorName.selector,
-          collaborator
-        )
-        permissionToggle = collaboratorElementXpath + util.format(
+      for (let i = 0; i < COLLABORATOR_PERMISSION_ARRAY.length; i++) {
+        permissionToggle = panelSelector + util.format(
           this.elements.permissionButton.selector,
-          collaboratorPermissionArray[i]
+          COLLABORATOR_PERMISSION_ARRAY[i]
         )
 
         await this.api.element('xpath', permissionToggle, result => {
@@ -233,7 +246,7 @@ module.exports = {
             return
           }
           return this.api.elementIdAttribute(result.value.ELEMENT, 'data-state', result => {
-            permissions[collaboratorPermissionArray[i]] = result.value === 'on'
+            permissions[COLLABORATOR_PERMISSION_ARRAY[i]] = result.value === 'on'
           })
         })
       }
@@ -245,7 +258,7 @@ module.exports = {
      * @param {string} requiredPermissions
      */
     changeCustomPermissionsTo: async function (collaborator, requiredPermissions) {
-      await this.expandInformationSelector(collaborator)
+      await this.clickEditShare(collaborator)
 
       const requiredPermissionArray = this.getArrayFromPermissionString(requiredPermissions)
       const sharePermissions = await this.getSharePermissions(collaborator)
@@ -262,6 +275,8 @@ module.exports = {
       }
       if (changed) {
         await this.saveCollaboratorPermission()
+      } else {
+        await this.clickCancel()
       }
     },
     /**
@@ -269,7 +284,7 @@ module.exports = {
      *
      * @param {string} permissionXpath
      */
-    assertPermissionDataStateIsOff: function (permissionXpath) {
+    _assertPermissionDataStateIsOff: function (permissionXpath) {
       return this.api.isVisible(permissionXpath, result => {
         if (result.value === true) {
           this
@@ -288,32 +303,35 @@ module.exports = {
       if (permissions !== undefined) {
         requiredPermissionArray = this.getArrayFromPermissionString(permissions)
       }
-      this.expandInformationSelector(collaborator)
 
-      for (let i = 0; i < collaboratorPermissionArray.length; i++) {
-        const permissionXpath = this.getPermissionSwitchXpath(collaboratorPermissionArray[i])
+      await this.clickEditShare(collaborator)
+
+      for (let i = 0; i < COLLABORATOR_PERMISSION_ARRAY.length; i++) {
+        const permissionXpath = this.getPermissionSwitchXpath(COLLABORATOR_PERMISSION_ARRAY[i])
         if (permissions !== undefined) {
           // check all the required permissions are set
-          if (requiredPermissionArray.includes(collaboratorPermissionArray[i])) {
+          if (requiredPermissionArray.includes(COLLABORATOR_PERMISSION_ARRAY[i])) {
             await this
               .assert
               .attributeEquals(permissionXpath, 'data-state', 'on', `data-state of xpath ${permissionXpath} is not set`)
           } else {
             // check unexpected permissions are not set
-            return this.assertPermissionDataStateIsOff(permissionXpath)
+            await this._assertPermissionDataStateIsOff(permissionXpath)
           }
         } else {
           // check all the permissions are not set
-          return this.assertPermissionDataStateIsOff(permissionXpath)
+          await this._assertPermissionDataStateIsOff(permissionXpath)
         }
       }
+
+      await this.clickCancel()
     },
     /**
      *
      * @param {string} collaborator
      */
     disableAllCustomPermissions: async function (collaborator) {
-      this.expandInformationSelector(collaborator)
+      await this.clickEditShare(collaborator)
       const sharePermissions = await this.getSharePermissions(collaborator)
       const enabledPermissions = Object.keys(sharePermissions)
         .filter(permission => sharePermissions[permission] === true)
@@ -375,7 +393,6 @@ module.exports = {
     deleteShareWithUserGroup: async function (item) {
       const informationSelector = util.format(this.elements.collaboratorInformationByCollaboratorName.selector, item)
       const deleteSelector = informationSelector + this.elements.deleteShareButton.selector
-      await this.expandInformationSelector(item)
       return this
         .useXpath()
         .waitForElementVisible(deleteSelector)
@@ -390,7 +407,7 @@ module.exports = {
      * @returns {Promise}
      */
     changeCollaboratorRole: async function (collaborator, newRole) {
-      await this.expandInformationSelector(collaborator)
+      await this.clickEditShare(collaborator)
       await this.changeCollaboratorRoleInDropdown(newRole)
       return this.saveCollaboratorPermission()
     },
@@ -456,7 +473,11 @@ module.exports = {
   },
   elements: {
     sharingSidebarRoot: {
-      selector: '#oc-files-sharing-sidebar'
+      selector: '//*[@id="oc-files-sharing-sidebar"]',
+      locateStrategy: 'xpath'
+    },
+    noResharePermissions: {
+      selector: '#oc-files-sharing-sidebar .files-collaborators-no-reshare-permissions-message'
     },
     sharingAutoComplete: {
       selector: '#oc-sharing-autocomplete .oc-autocomplete-input'
@@ -479,7 +500,7 @@ module.exports = {
       selector: '.files-collaborators-collaborator .files-collaborators-collaborator-information'
     },
     collaboratorInformationByCollaboratorName: {
-      selector: '//*[contains(@class, "files-collaborators-collaborator-name") and .="%s"]/ancestor::li',
+      selector: '//*[contains(@class, "files-collaborators-collaborator-name") and .="%s"]/ancestor::div[contains(concat(" ", @class, " "), " files-collaborators-collaborator ")]',
       locateStrategy: 'xpath'
     },
     collaboratorMoreInformation: {
@@ -487,9 +508,29 @@ module.exports = {
       selector: '/a',
       locateStrategy: 'xpath'
     },
+    createShareButton: {
+      selector: '//*[contains(@class, "files-collaborators-collaborator-add")]',
+      locateStrategy: 'xpath'
+    },
+    editShareButton: {
+      // within collaboratorInformationByCollaboratorName
+      selector: '//*[contains(@class, "files-collaborators-collaborator-edit")]',
+      locateStrategy: 'xpath'
+    },
     deleteShareButton: {
       // within collaboratorInformationByCollaboratorName
-      selector: '//*[@aria-label="Delete Share"]',
+      selector: '//*[contains(@class, "files-collaborators-collaborator-delete")]',
+      locateStrategy: 'xpath'
+    },
+    cancelButton: {
+      selector: '.files-collaborators-collaborator-cancel'
+    },
+    createShareDialog: {
+      selector: '//*[contains(@class, "files-collaborators-collaborator-add-dialog")]',
+      locateStrategy: 'xpath'
+    },
+    editShareDialog: {
+      selector: '//*[contains(@class, "files-collaborators-collaborator-edit-dialog")]',
       locateStrategy: 'xpath'
     },
     addShareButton: {
@@ -534,7 +575,7 @@ module.exports = {
       locateStrategy: 'xpath'
     },
     permissionButton: {
-      selector: '//span[.="Can %s"]/parent::div/div',
+      selector: '//span[.="Can %s"]/parent::div/*[@data-state]',
       locateStrategy: 'xpath'
     },
     permissionButtons: {
