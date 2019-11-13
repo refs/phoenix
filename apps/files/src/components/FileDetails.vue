@@ -1,5 +1,5 @@
 <template>
-  <oc-app-side-bar id="files-sidebar" :key="highlightedFile.id" class="uk-padding-small uk-overflow-auto uk-height-1-1" :disableAction="false" @close="close()">
+  <oc-app-side-bar id="files-sidebar" :key="highlightedFile.id" class="uk-padding-small uk-overflow-auto uk-height-1-1 uk-position-relative" :disableAction="false" @close="close()">
     <template slot="title" v-if="highlightedFile">
       <div class="uk-inline">
         <oc-icon :name="fileTypeIcon(highlightedFile)" size="large" />

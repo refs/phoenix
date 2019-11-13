@@ -1,6 +1,6 @@
 <template>
   <div id="oc-files-sharing-sidebar">
-    <div v-if="visiblePanel == 'collaboratorList'">
+    <div>
       <oc-loader v-if="sharesLoading" aria-label="Loading collaborator list" />
       <template v-else>
         <div v-if="$_ocCollaborators_canShare" class="uk-text-right">
@@ -45,12 +45,16 @@
         <div v-if="!shares.length && !sharesLoading" key="oc-collaborators-no-results"><translate>No collaborators</translate></div>
       </template>
     </div>
-    <div v-if="visiblePanel == 'newCollaborator'">
-      <new-collaborator v-if="$_ocCollaborators_canShare" key="new-collaborator" @close="visiblePanel='collaboratorList'" />
-    </div>
-    <div v-if="visiblePanel == 'editCollaborator'">
-      <edit-collaborator v-if="$_ocCollaborators_canShare" key="edit-collaborator" @close="visiblePanel='collaboratorList'; currentShare = null" :collaborator="currentShare" />
-    </div>
+    <transition name="custom-classes-transition" enter-active-class="uk-animation-slide-right uk-animation-fast" leave-active-class="uk-animation-slide-right uk-animation-reverse uk-animation-fast">
+      <div v-if="visiblePanel == 'newCollaborator'" class="uk-position-cover oc-default-background uk-padding-small uk-overflow-auto uk-height-1-1">
+        <new-collaborator v-if="$_ocCollaborators_canShare" key="new-collaborator" @close="visiblePanel='collaboratorList'" />
+      </div>
+    </transition>
+    <transition name="custom-classes-transition" enter-active-class="uk-animation-slide-right uk-animation-fast" leave-active-class="uk-animation-slide-right uk-animation-reverse uk-animation-fast">
+      <div v-if="visiblePanel == 'editCollaborator'" class="uk-position-cover oc-default-background uk-padding-small uk-overflow-auto uk-height-1-1">
+        <edit-collaborator v-if="$_ocCollaborators_canShare" key="edit-collaborator" @close="visiblePanel='collaboratorList'; currentShare = null" :collaborator="currentShare" />
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -168,5 +172,10 @@ export default {
 .oc-app-side-bar .oc-autocomplete-suggestion:hover .uk-text-meta,
 .oc-autocomplete-suggestion-selected .uk-text-meta {
   color: white;
+}
+
+/** needed to cover the container below when transitioning */
+.oc-app-side-bar .oc-default-background {
+  background-color: white;
 }
 </style>
