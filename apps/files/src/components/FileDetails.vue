@@ -1,5 +1,5 @@
 <template>
-  <oc-app-side-bar id="files-sidebar" :key="highlightedFile.id" class="uk-padding-small uk-overflow-auto uk-height-1-1 uk-position-relative" :disableAction="false" @close="close()">
+  <oc-app-side-bar id="files-sidebar" :key="highlightedFile.id" class="uk-padding-small uk-overflow-auto uk-height-1-1" :disableAction="false" @close="close()">
     <template slot="title" v-if="highlightedFile">
       <div class="uk-inline">
         <oc-icon :name="fileTypeIcon(highlightedFile)" size="large" />
@@ -28,12 +28,14 @@
       </div>
     </template>
     <template slot="content">
-      <oc-tabs>
-          <oc-tab-item :active="tab.app == activeTab" @click="activeTab = tab.app" v-for="tab of fileSideBarsEnabled" :key="tab.name">
-            {{ tab.component.title($gettext) }} {{ tab.name }}
-          </oc-tab-item>
-      </oc-tabs>
-      <component v-if="fileSideBars.length > 0 && activeTabComponent" v-bind:is="activeTabComponent.component" @reload="$emit('reload')"></component>
+      <div class="uk-position-relative">
+        <oc-tabs>
+            <oc-tab-item :active="tab.app == activeTab" @click="activeTab = tab.app" v-for="tab of fileSideBarsEnabled" :key="tab.name">
+              {{ tab.component.title($gettext) }} {{ tab.name }}
+            </oc-tab-item>
+        </oc-tabs>
+        <component v-if="fileSideBars.length > 0 && activeTabComponent" v-bind:is="activeTabComponent.component" @reload="$emit('reload')"></component>
+      </div>
     </template>
   </oc-app-side-bar>
 </template>

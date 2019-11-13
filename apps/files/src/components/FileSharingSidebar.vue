@@ -46,12 +46,12 @@
       </template>
     </div>
     <transition name="custom-classes-transition" enter-active-class="uk-animation-slide-right uk-animation-fast" leave-active-class="uk-animation-slide-right uk-animation-reverse uk-animation-fast">
-      <div v-if="visiblePanel == 'newCollaborator'" class="uk-position-cover oc-default-background uk-padding-small uk-overflow-auto uk-height-1-1">
+      <div v-if="visiblePanel == 'newCollaborator'" class="uk-position-cover oc-default-background">
         <new-collaborator v-if="$_ocCollaborators_canShare" key="new-collaborator" @close="visiblePanel='collaboratorList'" />
       </div>
     </transition>
     <transition name="custom-classes-transition" enter-active-class="uk-animation-slide-right uk-animation-fast" leave-active-class="uk-animation-slide-right uk-animation-reverse uk-animation-fast">
-      <div v-if="visiblePanel == 'editCollaborator'" class="uk-position-cover oc-default-background uk-padding-small uk-overflow-auto uk-height-1-1">
+      <div v-if="visiblePanel == 'editCollaborator'" class="uk-position-cover oc-default-background">
         <edit-collaborator v-if="$_ocCollaborators_canShare" key="edit-collaborator" @close="visiblePanel='collaboratorList'; currentShare = null" :collaborator="currentShare" />
       </div>
     </transition>
