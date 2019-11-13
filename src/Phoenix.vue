@@ -5,8 +5,11 @@
       <template v-if="!showHeader">
         <router-view name="fullscreen"></router-view>
       </template>
+      <template v-else-if="iframed">
+        <embedded/>
+      </template>
       <template v-else>
-        <message-bar />
+        <message-bar/>
         <top-bar></top-bar>
         <side-menu></side-menu>
         <main id="main">
@@ -22,13 +25,15 @@ import TopBar from './components/Top-Bar.vue'
 import Menu from './components/Menu.vue'
 import MessageBar from './components/MessageBar.vue'
 import SkipTo from './components/SkipTo.vue'
+import Embedded from './components/Embedded.vue'
 
 export default {
   components: {
     MessageBar,
     'side-menu': Menu,
     TopBar,
-    SkipTo
+    SkipTo,
+    Embedded
   },
   metaInfo () {
     const metaInfo = {
@@ -52,6 +57,9 @@ export default {
     },
     favicon () {
       return this.configuration.theme.logo.favicon
+    },
+    iframed () {
+      return window.location !== window.parent.location
     }
   },
   methods: {

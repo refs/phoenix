@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+	<meta name="theme-color" content="#375f7E"/>
+	<meta http-equiv="x-ua-compatible" content="IE=11">
+	<noscript>
+		<style>
+			#enable-js-banner {
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+				padding: 0.5rem;
+				background-color: #467391;
+			}
+
+			#banner-content{
+				color: white;
+			}
+		</style>
+	</noscript>
+</head>
+<body>
+	<main id="owncloud">
+		<iframe src="./index.html"
+		width="600"
+		height="400"
+		sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin"></iframe>
+		<button onclick="init()">init</button>
+		<button onclick="openFilePicker()">openFilePicker</button>
+	</main>
+</body>
+<script>
+function init() {
+	window.frames[0].postMessage({action: 'init'})
+}
+function openFilePicker() {
+	window.frames[0].postMessage({action: 'openFilePicker'})
+}
+window.addEventListener('message', function (e) {
+	console.log(e.data)
+})
+</script>
+</html>

@@ -55,6 +55,22 @@ module.exports = {
         dirty: gitDirty
       }
     }), new WebpackCopyPlugin(apps),
+    new WebpackCopyPlugin([{
+      from: 'manifest.json',
+      to: 'manifest.json'
+    }, {
+      from: 'oidc-callback.html',
+      to: 'oidc-callback.html'
+    }, {
+      from: 'oidc-silent-redirect.html',
+      to: 'oidc-silent-redirect.html'
+    }, {
+      from: 'framed.html',
+      to: 'framed.html'
+    }, {
+      from: 'config.json',
+      to: 'config.json'
+    }]),
     new HtmlWebpackPlugin({
       template: 'index.html'
     }),
