@@ -8,6 +8,7 @@ import FileLink from './components/FileLink.vue'
 import PrivateLink from './components/PrivateLink.vue'
 import PublicLink from './components/PublicLinks/PublicLink.vue'
 import FilesDrop from './components/PublicLinks/FilesDrop.vue'
+import Meet from './components/Kopano/Meet.vue'
 import translationsJson from '../l10n/translations.json'
 
 const store = require('./store')
@@ -50,6 +51,16 @@ const appInfo = {
       quickAccess: {
         icon: 'share',
         ariaLabel: $gettext('Collaborators')
+      }
+    }, {
+      app: 'kopano-meet',
+      component: Meet,
+      enabled (capabilities) {
+        return true
+      },
+      quickAccess: {
+        icon: 'video_call',
+        ariaLabel: 'Meet'
       }
     }
   ]
