@@ -9,6 +9,7 @@ import PrivateLink from './components/PrivateLink.vue'
 import PublicLink from './components/PublicLinks/PublicLink.vue'
 import FilesDrop from './components/PublicLinks/FilesDrop.vue'
 import Meet from './components/Kopano/Meet.vue'
+import FilesPicker from './components/Embedded/FilePicker.vue'
 import translationsJson from '../l10n/translations.json'
 
 const store = require('./store')
@@ -206,6 +207,13 @@ const routes = [
       app: FilesDrop
     },
     meta: { auth: false }
+  },
+  {
+    path: '/embedded/file-picker/:item?',
+    name: 'embedded-file-picker',
+    components: {
+      embedded: FilesPicker
+    }
   }
 ]
 
