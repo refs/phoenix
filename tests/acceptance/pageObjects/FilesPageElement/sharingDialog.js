@@ -80,7 +80,6 @@ module.exports = {
      * @param {boolean} [shareWithGroup=false]
      */
     selectCollaboratorForShare: async function (sharee, shareWithGroup = false) {
-      await this.clickCreateShare()
       // We need waitForElementPresent here.
       // waitForElementVisible would break even with 'abortOnFailure: false' if the element is not present
       await this.enterAutoComplete(sharee)
@@ -96,6 +95,7 @@ module.exports = {
               .waitForElementVisible('@sharingAutoCompleteDropDownElements')
           }
         })
+
       const webElementIdList = await this.getShareAutocompleteWebElementIdList()
 
       let index = 0
@@ -144,6 +144,7 @@ module.exports = {
      * @param {string} permissions
      */
     shareWithUserOrGroup: async function (sharee, shareWithGroup = false, role, permissions) {
+      await this.clickCreateShare()
       await this.selectCollaboratorForShare(sharee, shareWithGroup)
       await this.selectRoleForNewCollaborator(role)
       if (permissions === undefined) {
@@ -202,7 +203,7 @@ module.exports = {
         .click(editSelector)
         .waitForElementVisible(editShareDialog)
     },
-    clickCancel: function (collaborator) {
+    clickCancel: function () {
       return this
         .waitForElementVisible('@cancelButton')
         .click('@cancelButton')
@@ -228,10 +229,9 @@ module.exports = {
      * The keys gives the permissions that are currently visible in the screen
      * The values {bool} gives the state of the permissions
      *
-     * @param {string} collaborator
      * @return {Promise<Object.<string, boolean>>}  eg - {share: true, change: false}
      */
-    getSharePermissions: async function (collaborator) {
+    getSharePermissions: async function () {
       const permissions = {}
       const panelSelector = this.elements.sharingSidebarRoot.selector
       let permissionToggle
@@ -261,7 +261,7 @@ module.exports = {
       await this.clickEditShare(collaborator)
 
       const requiredPermissionArray = this.getArrayFromPermissionString(requiredPermissions)
-      const sharePermissions = await this.getSharePermissions(collaborator)
+      const sharePermissions = await this.getSharePermissions()
 
       let changed = false
       for (const permission in sharePermissions) {
@@ -280,20 +280,6 @@ module.exports = {
       }
     },
     /**
-     * asserts that the permission is set to "off" or not displayed at all
-     *
-     * @param {string} permissionXpath
-     */
-    _assertPermissionDataStateIsOff: function (permissionXpath) {
-      return this.api.isVisible(permissionXpath, result => {
-        if (result.value === true) {
-          this
-            .assert
-            .attributeEquals(permissionXpath, 'data-state', 'off', `data-state of xpath ${permissionXpath} is set `)
-        }
-      })
-    },
-    /**
      *
      * @param {string} collaborator
      * @param {string} permissions
@@ -306,21 +292,22 @@ module.exports = {
 
       await this.clickEditShare(collaborator)
 
+      // read the permissions from the checkboxes
+      const currentSharePermissions = await this.getSharePermissions()
+
       for (let i = 0; i < COLLABORATOR_PERMISSION_ARRAY.length; i++) {
-        const permissionXpath = this.getPermissionSwitchXpath(COLLABORATOR_PERMISSION_ARRAY[i])
+        const permissionName = COLLABORATOR_PERMISSION_ARRAY[i]
         if (permissions !== undefined) {
           // check all the required permissions are set
-          if (requiredPermissionArray.includes(COLLABORATOR_PERMISSION_ARRAY[i])) {
-            await this
-              .assert
-              .attributeEquals(permissionXpath, 'data-state', 'on', `data-state of xpath ${permissionXpath} is not set`)
+          if (requiredPermissionArray.includes(permissionName)) {
+            this.assert.strictEqual(currentSharePermissions[permissionName], true, `Permission ${permissionName} is not set`)
           } else {
-            // check unexpected permissions are not set
-            await this._assertPermissionDataStateIsOff(permissionXpath)
+            // check unexpected permissions are not set or absent from the array
+            this.assert.ok(!currentSharePermissions[permissionName], `Permission ${permissionName} is set`)
           }
         } else {
-          // check all the permissions are not set
-          await this._assertPermissionDataStateIsOff(permissionXpath)
+          // check all the permissions are not set or absent from the array
+          this.assert.ok(!currentSharePermissions[permissionName], `Permission ${permissionName} is set`)
         }
       }
 
@@ -367,17 +354,26 @@ module.exports = {
       return Promise.all(itemsListPromises)
     },
     /**
+     * Returns all autocomplete web element ids.
+     * If the button "show all" is present, this function will click it to make
+     * sure we get an exhaustive list of results.
      *
      * @returns {Promise.<string[]>} Array of autocomplete webElementIds
      */
     getShareAutocompleteWebElementIdList: async function () {
       const webElementIdList = []
       const showAllResultsXpath = this.elements.sharingAutoCompleteShowAllResultsButton.selector
-      await this.api.waitForElementVisible(
-        { locateStrategy: 'css selector', timeout: 100, selector: showAllResultsXpath, abortOnFailure: false }
-      )
+      // wait for autocomplete to finish loading
+      await this.waitForElementVisible('@sharingAutoCompleteDropDown')
+      await this.waitForElementNotPresent('@sharingAutoCompleteSpinner')
+      // note: some result lists don't have the "show all" button depending on the number of entries,
+      // so we only click it if present
+      await this.api.element('css selector', showAllResultsXpath, (result) => {
+        if (result.status !== -1) {
+          return this.click('@sharingAutoCompleteShowAllResultsButton')
+        }
+      })
 
-        .click(showAllResultsXpath)
       await this
         .api.elements('css selector', this.elements.sharingAutoCompleteDropDownElements.selector, (result) => {
           result.value.forEach((value) => {
@@ -449,7 +445,8 @@ module.exports = {
       return Promise.all(promiseList)
     },
     showAllAutoCompleteResults: function () {
-      return this.waitForElementVisible('@sharingAutoCompleteShowAllResultsButton')
+      return this.useCss()
+        .waitForElementVisible('@sharingAutoCompleteShowAllResultsButton')
         .click('@sharingAutoCompleteShowAllResultsButton')
         .waitForElementNotPresent('@sharingAutoCompleteShowAllResultsButton')
     },
@@ -481,6 +478,9 @@ module.exports = {
     },
     sharingAutoComplete: {
       selector: '#oc-sharing-autocomplete .oc-autocomplete-input'
+    },
+    sharingAutoCompleteSpinner: {
+      selector: '#oc-sharing-autocomplete .oc-autocomplete-spinner'
     },
     sharingAutoCompleteDropDown: {
       selector: '#oc-sharing-autocomplete .oc-autocomplete-suggestion-list'

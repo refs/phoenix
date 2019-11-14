@@ -139,10 +139,24 @@ Feature: Sharing files and folders with internal groups
     When the administrator excludes group "system-group" from receiving shares using the webUI
     Then user "user1" should not be able to share folder "simple-folder" with group "system-group" using the sharing API
 
+  @skip @yetToImplement
+  Scenario: autocompletion for a group that is excluded from receiving shares
+    Given group "system-group" has been created
+    And the administrator has browsed to the admin sharing settings page
+    When the administrator excludes group "system-group" from receiving shares using the webUI
+    And the user re-logs in as "user1" using the webUI
+    And the user browses to the files page
+    And the user opens the share dialog for folder "simple-folder" using the webUI
+    And the user opens the share creation dialog in the webUI
+    And the user types "system-group" in the share-with-field
+    Then a tooltip with the text "No users or groups found for system-group" should be shown near the share-with-field on the webUI
+    And the autocomplete list should not be displayed on the webUI
+
   Scenario: user shares the file/folder with a group and delete the share with group
     Given user "user1" has logged in using the webUI
     And user "user1" has shared file "lorem.txt" with group "grp1"
     When the user opens the share dialog for file "lorem.txt" using the webUI
+    And the user opens the share creation dialog in the webUI
     Then group "grp1" should be listed as "Editor" in the collaborators list on the webUI
     When the user deletes "grp1" as collaborator for the current file using the webUI
     Then group "grp1" should not be listed in the collaborators list on the webUI
@@ -156,6 +170,7 @@ Feature: Sharing files and folders with internal groups
     And user "user1" has shared file "lorem.txt" with group "grp1"
     And user "user1" has shared file "lorem.txt" with group "grp2"
     When the user opens the share dialog for file "lorem.txt" using the webUI
+    And the user opens the share creation dialog in the webUI
     Then group "grp1" should be listed as "Editor" in the collaborators list on the webUI
     And group "grp2" should be listed as "Editor" in the collaborators list on the webUI
     When the user deletes "grp1" as collaborator for the current file using the webUI
@@ -171,5 +186,7 @@ Feature: Sharing files and folders with internal groups
     When the user re-logs in as "user1" using the webUI
     And the user browses to the files page
     And the user opens the share dialog for folder "simple-folder" using the webUI
+    And the user opens the share creation dialog in the webUI
     And the user types "system-group" in the share-with-field
     Then the autocomplete list should not be displayed on the webUI
+
