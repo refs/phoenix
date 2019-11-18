@@ -28,12 +28,19 @@
       </div>
     </template>
     <template slot="content">
-      <oc-tabs>
-          <oc-tab-item :active="tab.app == activeTab" @click="activeTab = tab.app" v-for="tab of fileSideBarsEnabled" :key="tab.name">
+      <oc-tabbed :initial="defaultTab" @activeTab="handleActiveTab">
+        <template slot="tabs">
+          <oc-tabbed-tab :name="tab.app" @click="activeTab = tab.app" :key="tab.app" v-for="tab of fileSideBarsEnabled">
             {{ tab.component.title($gettext) }} {{ tab.name }}
-          </oc-tab-item>
-      </oc-tabs>
-      <component v-if="fileSideBars.length > 0 && activeTabComponent" v-bind:is="activeTabComponent.component" @reload="$emit('reload')"></component>
+          </oc-tabbed-tab>
+        </template>
+        <template slot="panels">
+          <oc-tabbed-panel :name="tab.app" :key="tab.app" v-for="tab of fileSideBarsEnabled">
+            <component v-if="isTabActive(tab.app)" v-bind:is="activeTabComponent.component" @reload="$emit('reload')"></component>
+          </oc-tabbed-panel>
+        </template>
+      </oc-tabbed>
+
     </template>
   </oc-app-side-bar>
 </template>
@@ -49,6 +56,7 @@ export default {
     return {
       /** String name of the tab that is activated */
       activeTab: null,
+      activeTabFromComponent: null,
       linkCopied: false
     }
   },
@@ -58,8 +66,15 @@ export default {
     close () {
       this.$emit('reset')
     },
+    handleActiveTab (payload) {
+      console.log(payload)
+      this.activeTabFromComponent = payload
+    },
     showSidebar (app) {
       this.activeTab = app
+    },
+    isTabActive (name) {
+      return this.activeTabFromComponent === `tab-${name}`
     },
     clipboardSuccessHandler () {
       this.linkCopied = true

@@ -2,7 +2,7 @@
   <div id="oc-files-file-link">
     <div class="uk-text-right">
       <oc-button v-if="!linksLoading" :disabled="!!(formOpen || linkId)" variation="primary" icon="add" @click="$_openForm()" v-translate>Add Link</oc-button>
-      <button v-else disabled class="uk-button uk-button-default uk-position-relative"><oc-spinner class="uk-position-small uk-position-center-left" size="small" /><span class="uk-margin-small-left" v-translate>Loading</span></button>
+      <button v-else disabled class="uk-button uk-button-default uk-position-relative"><oc-spinner class="uk-position-small uk-position-center-left" size="small" :aria-label="spinnerLoadingText" /><span class="uk-margin-small-left" v-translate>Loading</span></button>
     </div>
     <FileLinkForm v-if="formOpen" v-bind:params="params" :linkId="linkId" class="uk-margin" />
     <transition-group tag="ul" name="custom-classes-transition" enter-active-class="uk-animation-slide-left-medium" leave-active-class="uk-animation-slide-right-medium uk-animation-reverse" class="uk-list uk-list-divider uk-overflow-hidden">
@@ -42,6 +42,7 @@ const FileLinkForm = _ => import('./FileLinkForm.vue')
 export default {
   mixins: [mixins],
   components: { FileLinkForm },
+  name: 'FileLink',
   title: ($gettext) => {
     return $gettext('Links')
   },
@@ -50,6 +51,7 @@ export default {
       // Render template only when needed
       formOpen: false,
       linkId: false,
+      spinnerLoadingText: this.$gettext('Loading'),
 
       // group for easy payload
       params: {
