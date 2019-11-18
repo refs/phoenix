@@ -3,7 +3,7 @@ const userSharePostfix = '\nUser'
 const util = require('util')
 const _ = require('lodash')
 
-const collaboratorPermissionArray = ['share', 'change', 'create', 'delete']
+const collaboratorPermissionArray = ['share', 'update', 'create', 'delete']
 
 module.exports = {
   commands: {
@@ -19,8 +19,8 @@ module.exports = {
      *
      * @param {string} permission
      */
-    getPermissionSwitchXpath: function (permission) {
-      return util.format(this.elements.permissionButton.selector, permission)
+    getPermissionCheckbox: function (permission) {
+      return util.format(this.elements.permissionCheckbox.selector, permission)
     },
 
     assertSharingNotAllowed: function () {
@@ -125,10 +125,10 @@ module.exports = {
     selectPermissionsOnPendingShare: async function (permissions) {
       const permissionArray = this.getArrayFromPermissionString(permissions)
       for (const permission of permissionArray) {
-        const permissionSwitchXpath = this.getPermissionSwitchXpath(permission)
-        const elementID = await this.getVisibleElementID('xpath', permissionSwitchXpath)
+        const permissionCheckbox = this.getPermissionCheckbox(permission)
+        const elementID = await this.getVisibleElementID('xpath', permissionCheckbox)
         if (elementID === null) {
-          throw new Error('Button is not visible for permission:', permission)
+          throw new Error('Checkbox is not visible for permission:', permission)
         }
         await this.api.elementIdClick(elementID)
       }
@@ -197,8 +197,8 @@ module.exports = {
      * @param {string} permission
      */
     toggleSinglePermission: async function (permission) {
-      const permissionXpath = this.getPermissionSwitchXpath(permission)
-      const elementID = await this.getVisibleElementID('xpath', permissionXpath)
+      const permissionCheckbox = this.getPermissionCheckbox(permission)
+      const elementID = await this.getVisibleElementID('xpath', permissionCheckbox)
       if (!elementID) {
         throw new Error(`permission ${permission} is not visible `)
       }
@@ -217,23 +217,23 @@ module.exports = {
     getSharePermissions: async function (collaborator) {
       const permissions = {}
       let collaboratorElementXpath
-      let permissionToggle
+      let permissionCheckbox
       for (let i = 0; i < collaboratorPermissionArray.length; i++) {
         collaboratorElementXpath = util.format(
           this.elements.collaboratorInformationByCollaboratorName.selector,
           collaborator
         )
-        permissionToggle = collaboratorElementXpath + util.format(
-          this.elements.permissionButton.selector,
+        permissionCheckbox = collaboratorElementXpath + util.format(
+          this.elements.permissionCheckbox.selector,
           collaboratorPermissionArray[i]
         )
 
-        await this.api.element('xpath', permissionToggle, result => {
+        await this.api.element('xpath', permissionCheckbox, result => {
           if (!result.value.ELEMENT) {
             return
           }
-          return this.api.elementIdAttribute(result.value.ELEMENT, 'data-state', result => {
-            permissions[collaboratorPermissionArray[i]] = result.value === 'on'
+          return this.api.elementIdSelected(result.value.ELEMENT, result => {
+            permissions[collaboratorPermissionArray[i]] = result.value
           })
         })
       }
@@ -269,12 +269,28 @@ module.exports = {
      *
      * @param {string} permissionXpath
      */
-    assertPermissionDataStateIsOff: function (permissionXpath) {
-      return this.api.isVisible(permissionXpath, result => {
+    assertPermissionDataStateIsOff: function (permissionCheckbox) {
+      return this.api.isVisible(permissionCheckbox, result => {
         if (result.value === true) {
-          this
-            .assert
-            .attributeEquals(permissionXpath, 'data-state', 'off', `data-state of xpath ${permissionXpath} is set `)
+          return this
+            .expect
+            .element(permissionCheckbox)
+            .to.not.be.selected
+        }
+      })
+    },
+    /**
+     * asserts that the permission is set to "on" or not displayed at all
+     *
+     * @param {string} permissionXpath
+     */
+    assertPermissionDataStateIsOn: function (permissionCheckbox) {
+      return this.api.isVisible(permissionCheckbox, result => {
+        if (result.value === true) {
+          return this
+            .expect
+            .element(permissionCheckbox)
+            .to.be.selected
         }
       })
     },
@@ -283,7 +299,7 @@ module.exports = {
      * @param {string} collaborator
      * @param {string} permissions
      */
-    assertPermissionIsDisplayed: async function (collaborator, permissions = undefined) {
+    assertPermissionIsDisplayed: function (collaborator, permissions = undefined) {
       let requiredPermissionArray
       if (permissions !== undefined) {
         requiredPermissionArray = this.getArrayFromPermissionString(permissions)
@@ -291,22 +307,23 @@ module.exports = {
       this.expandInformationSelector(collaborator)
 
       for (let i = 0; i < collaboratorPermissionArray.length; i++) {
-        const permissionXpath = this.getPermissionSwitchXpath(collaboratorPermissionArray[i])
+        const permissionCheckbox = this.getPermissionCheckbox(collaboratorPermissionArray[i])
         if (permissions !== undefined) {
           // check all the required permissions are set
           if (requiredPermissionArray.includes(collaboratorPermissionArray[i])) {
-            await this
-              .assert
-              .attributeEquals(permissionXpath, 'data-state', 'on', `data-state of xpath ${permissionXpath} is not set`)
+            this.assertPermissionDataStateIsOn(permissionCheckbox)
           } else {
             // check unexpected permissions are not set
-            return this.assertPermissionDataStateIsOff(permissionXpath)
+            this.assertPermissionDataStateIsOff(permissionCheckbox)
           }
         } else {
+          console.log('Checking for all of them')
           // check all the permissions are not set
-          return this.assertPermissionDataStateIsOff(permissionXpath)
+          this.assertPermissionDataStateIsOff(permissionCheckbox)
         }
       }
+
+      return this
     },
     /**
      *
@@ -517,8 +534,8 @@ module.exports = {
     newCollaboratorRemoveButton: {
       selector: "//span[contains(@class, 'oc-icon-danger')]"
     },
-    newCollaboratorRoleCustomRole: {
-      selector: '#files-collaborator-new-collaborator-role-custom'
+    newCollaboratorRoleAdvancedPermissions: {
+      selector: '#files-collaborator-new-collaborator-role-advancedRole'
     },
     selectRoleButtonInCollaboratorInformation: {
       selector: '//button[contains(@class, "files-collaborators-role-button")]',
@@ -533,12 +550,13 @@ module.exports = {
       selector: '//ul[contains(@class,"oc-autocomplete-suggestion-list")]//span[translate(.,"ABCDEFGHJIKLMNOPQRSTUVWXYZ","abcdefghjiklmnopqrstuvwxyz") ="%s"]',
       locateStrategy: 'xpath'
     },
-    permissionButton: {
-      selector: '//span[.="Can %s"]/parent::div/div',
+    permissionCheckbox: {
+      selector: '//input[@id="files-collaborators-permission-%s"]',
       locateStrategy: 'xpath'
     },
-    permissionButtons: {
-      selector: '//span[contains(., "Can")]/parent::div/div[contains(@class, "oc-switch")]'
+    permissionCheckboxes: {
+      selector: '//input[contains(@class, "files-collaborators-permission-checkbox")]',
+      locateStrategy: 'xpath'
     }
   }
 }
